@@ -1,0 +1,143 @@
+#=================================================
+# Description: Build OpenWrt using GitHub Actions
+# Lisence: MIT
+# Author: Mod from P3TERX
+#=================================================
+
+name: OpenWrt
+
+on:
+  push:
+    branches:
+      - master
+  workflow_dispatch:
+    inputs:
+      SSH_ACTIONS:
+        description: 'Needs to create a ssh debug session?'
+        required: false
+        default: 'false'
+
+env:
+  TZ: Asia/Shanghai
+
+jobs:
+    build:
+      runs-on: ubuntu-18.04
+      if: github.event.repository.owner.id == github.event.sender.id
+
+      steps:
+      - name: Checkout
+        uses: actions/checkout@main
+
+      - name: Set Username
+        id: set_name
+        run: |
+          if [ "$GITHUB_ACTOR" = "gyj1109" ];then
+            echo "##[set-output name=username;]Gyj1109"
+          else
+            echo "##[set-output name=username;]`echo $GITHUB_REPOSITORY | cut -d / -f 2`"
+          fi
+
+      - name: Initialization Environment
+        env:
+          DEBIAN_FRONTEND: noninteractive
+        run: |
+          docker rmi $(docker images -q)
+          sudo -E apt-get remove -y --purge azure-cli ghc zulu* hhvm llvm* firefox google* dotnet* powershell mysql* php* mssql-tools msodbcsql17 android*
+          sudo -E apt-get update -y
+          sudo -E apt-get full-upgrade -y
+          sudo -E apt-get install -y build-essential asciidoc binutils bzip2 coreutils gawk gettext git libncurses5-dev libz-dev patch unzip zlib1g-dev lib32gcc1 libc6-dev-i386 subversion flex uglifyjs git-core gcc-8 gcc++-8 gcc-8-multilib g++-8-multilib p7zip p7zip-full msmtp libssl-dev texinfo libreadline-dev libglib2.0-dev xmlto qemu-utils upx libelf-dev autoconf automake libtool autopoint ccache curl wget vim nano python python3 python-pip python3-pip python-ply python3-ply haveged lrzsz device-tree-compiler scons antlr3 gperf ecj fastjar re2c xz-utils tar jq
+          for i in $(ls /usr/bin/*-8); do sudo -E ln -sf $i ${i%%-8*}; done
+          sudo -E ln -sf /usr/include/asm-generic /usr/include/asm
+          sudo -E apt-get autoremove -y --purge
+          sudo -E apt-get clean -y
+          sudo -E swapoff -a
+          sudo -E rm -rf /usr/share/dotnet /etc/mysql /etc/php /usr/local/lib/android /opt/ghc /swapfile
+          git config --global user.name "Actions"
+          git config --global user.email "actions@github.com"
+
+      - name: Clone Source
+        run: |
+          git clone https://github.com/coolsnowwolf/lede.git openwrt
+          sudo chown -R runner:runner openwrt
+          cd openwrt
+          ./scripts/feeds update -a
+          ./scripts/feeds install -a
+
+      - name: Additional Step
+        run: |
+          bash addon_steps.sh
+
+      - name: Load Config
+        run: |
+          cd openwrt
+          mv ../.config .config
+
+      - name: Set Build Time
+        id: set_time
+        run: |
+          build_time=$(date +%Y-%m-%dT%H-%M)
+          sed -i s/BUILDVERSION/$build_time/g openwrt/package/lean/default-settings/files/zzz-default-settings
+          sed -i s/BUILDUSER/${{ steps.set_name.outputs.username }}/g openwrt/package/lean/default-settings/files/zzz-default-settings
+          echo -e "\033[32m\033[1m$build_time\033[0m"
+          echo "##[set-output name=build_time;]$build_time"
+
+      - name: Setup Debug Session
+        if: github.event.inputs.SSH_ACTIONS == 'true'
+        uses: tete1030/safe-debugger-action@dev
+
+      - name: Make
+        run: |
+          rm -rf ./artifact/
+          mkdir -p ./artifact/
+          cd openwrt
+          make defconfig
+          make -j$[$(nproc)+1]
+          mv -f bin/targets/x86/64/openwrt-x86-64-generic-squashfs-combined-efi.img ../artifact/openwrt-x86-64-generic-squashfs-combined-efi.img
+
+      - name: Rebuild to Collect Error Log
+        if: failure()
+        run: |
+          rm -rf ./artifact/
+          mkdir -p ./artifact/
+          cd openwrt
+          make -j1 V=s
+
+      - name: Organize Files
+        run: |
+          cd openwrt
+          cp .config ../artifact/config.seed
+          ./scripts/diffconfig.sh > ../artifact/config.slim.seed
+          cd ../artifact/
+          echo -e "MD5:    \c" > checksums
+          md5sum *.img | grep squashfs | cut -d " " -f 1 >> checksums
+          echo -e "SHA256: \c" >> checksums
+          sha256sum *.img | grep squashfs | cut -d " " -f 1 >> checksums
+          gzip *.img
+          cp checksums ../body.md
+          zip ../OpenWrt-${{ steps.set_name.outputs.username }}-${{ steps.set_time.outputs.build_time }}-ROM.zip *
+          sed -i 's/:\ \+/:\t/g' ../body.md
+          sed -i '1iBuilt at ${{ steps.set_time.outputs.build_time }}' ../body.md
+
+      - name: Upload Packages
+        uses: actions/upload-artifact@main
+        with:
+          name: OpenWrt-${{ steps.set_name.outputs.username }}-${{ steps.set_time.outputs.build_time }}-Packages
+          path: ./openwrt/bin/targets/x86/64/packages/
+
+      - name: Upload Artifact
+        uses: actions/upload-artifact@main
+        with:
+          name: OpenWrt-${{ steps.set_name.outputs.username }}-${{ steps.set_time.outputs.build_time }}-ROM
+          path: ./artifact/
+
+      - name: Create Release
+        uses: ncipollo/release-action@v1
+        with:
+          allowUpdates: true
+          artifacts: "OpenWrt-${{ steps.set_name.outputs.username }}-*-ROM.zip,artifact/config.seed"
+          bodyFile: "body.md"
+          commit: ${{ github.sha }}
+          name: OpenWrt-${{ steps.set_name.outputs.username }}-${{ steps.set_time.outputs.build_time }}
+          tag: ${{ steps.set_time.outputs.build_time }}
+          token: ${{ secrets.sec_token }}
