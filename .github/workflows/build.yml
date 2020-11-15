@@ -77,8 +77,6 @@ jobs:
         id: set_time
         run: |
           build_time=$(date +%Y-%m-%dT%H-%M)
-          sed -i s/BUILDVERSION/$build_time/g openwrt/package/lean/default-settings/files/zzz-default-settings
-          sed -i s/BUILDUSER/${{ steps.set_name.outputs.username }}/g openwrt/package/lean/default-settings/files/zzz-default-settings
           echo -e "\033[32m\033[1m$build_time\033[0m"
           echo "##[set-output name=build_time;]$build_time"
 
