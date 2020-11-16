@@ -29,3 +29,6 @@ git clone https://github.com/rufengsuixing/luci-app-adguardhome.git
 
 sed -i 's/vpn/services/g' `grep 'vpn' -rl luci-app-zerotier`
 sed -i '/VPN/d' `grep 'VPN' -rl luci-app-zerotier`
+
+cd ../..
+sed -i 's/ +luci-theme-bootstrap//g' `grep '+luci-theme-bootstrap' -rl feeds/luci/collections/luci`
