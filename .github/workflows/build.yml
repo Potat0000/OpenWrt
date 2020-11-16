@@ -91,7 +91,6 @@ jobs:
           cd openwrt
           make defconfig
           make -j$[$(nproc)+1]
-          mv -f bin/targets/x86/64/openwrt-x86-64-generic-squashfs-combined-efi.img ../artifact/openwrt-x86-64-generic-squashfs-combined-efi.img
 
       - name: Rebuild to Collect Error Log
         if: failure()
@@ -101,12 +100,19 @@ jobs:
           cd openwrt
           make -j1 V=s
 
+      - name: Upload Full Artifact
+        uses: actions/upload-artifact@main
+        with:
+          name: OpenWrt-${{ steps.set_name.outputs.username }}-${{ steps.set_time.outputs.build_time }}-Packages
+          path: ./openwrt/bin/targets/x86/64/
+
       - name: Organize Files
         run: |
           cd openwrt
           cp .config ../artifact/config.seed
           ./scripts/diffconfig.sh > ../artifact/config.slim.seed
           cd ../artifact/
+          mv -f ../openwrt/bin/targets/x86/64/*.img .
           echo -e "MD5:    \c" > checksums
           md5sum *.img | grep squashfs | cut -d " " -f 1 >> checksums
           echo -e "SHA256: \c" >> checksums
@@ -117,13 +123,7 @@ jobs:
           sed -i 's/:\ \+/:\t/g' ../body.md
           sed -i '1iBuilt at ${{ steps.set_time.outputs.build_time }}' ../body.md
 
-      - name: Upload Packages
-        uses: actions/upload-artifact@main
-        with:
-          name: OpenWrt-${{ steps.set_name.outputs.username }}-${{ steps.set_time.outputs.build_time }}-Packages
-          path: ./openwrt/bin/targets/x86/64/packages/
-
-      - name: Upload Artifact
+      - name: Upload ROM Artifact
         uses: actions/upload-artifact@main
         with:
           name: OpenWrt-${{ steps.set_name.outputs.username }}-${{ steps.set_time.outputs.build_time }}-ROM
