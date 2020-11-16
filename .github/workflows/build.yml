@@ -91,7 +91,6 @@ jobs:
           cd openwrt
           make defconfig
           make -j$[$(nproc)+1]
-          mv -f bin/targets/x86/64/openwrt-x86-64-generic-squashfs-combined-efi.img ../artifact/openwrt-x86-64-generic-squashfs-combined-efi.img
 
       - name: Rebuild to Collect Error Log
         if: failure()
@@ -107,6 +106,7 @@ jobs:
           cp .config ../artifact/config.seed
           ./scripts/diffconfig.sh > ../artifact/config.slim.seed
           cd ../artifact/
+          mv -f ../openwrt/bin/targets/x86/64/*-generic-squashfs-combined-efi.img .
           echo -e "MD5:    \c" > checksums
           md5sum *.img | grep squashfs | cut -d " " -f 1 >> checksums
           echo -e "SHA256: \c" >> checksums
@@ -114,26 +114,29 @@ jobs:
           gzip *.img
           cp checksums ../body.md
           zip ../OpenWrt-${{ steps.set_name.outputs.username }}-${{ steps.set_time.outputs.build_time }}-ROM.zip *
-          sed -i 's/:\ \+/:\t/g' ../body.md
-          sed -i '1iBuilt at ${{ steps.set_time.outputs.build_time }}' ../body.md
+          cd ..
+          sed -i 's/:\ \+/:\t/g' body.md
+          sed -i '1iBuilt at ${{ steps.set_time.outputs.build_time }}' body.md
+          cd openwrt/bin/targets/x86/64/packages
+          zip ../../../../../../OpenWrt-${{ steps.set_name.outputs.username }}-${{ steps.set_time.outputs.build_time }}-Packages.zip *
 
-      - name: Upload Packages
-        uses: actions/upload-artifact@main
-        with:
-          name: OpenWrt-${{ steps.set_name.outputs.username }}-${{ steps.set_time.outputs.build_time }}-Packages
-          path: ./openwrt/bin/targets/x86/64/packages/
-
-      - name: Upload Artifact
+      - name: Upload ROM Artifact
         uses: actions/upload-artifact@main
         with:
           name: OpenWrt-${{ steps.set_name.outputs.username }}-${{ steps.set_time.outputs.build_time }}-ROM
           path: ./artifact/
 
+      - name: Upload Packages
+        uses: actions/upload-artifact@main
+        with:
+          name: OpenWrt-${{ steps.set_name.outputs.username }}-${{ steps.set_time.outputs.build_time }}-Packages
+          path: ./openwrt/bin/targets/x86/64/packages
+
       - name: Create Release
         uses: ncipollo/release-action@v1
         with:
           allowUpdates: true
-          artifacts: "OpenWrt-${{ steps.set_name.outputs.username }}-*-ROM.zip,artifact/config.seed"
+          artifacts: "OpenWrt-${{ steps.set_name.outputs.username }}-*.zip,artifact/config.seed"
           bodyFile: "body.md"
           commit: ${{ github.sha }}
           name: OpenWrt-${{ steps.set_name.outputs.username }}-${{ steps.set_time.outputs.build_time }}
