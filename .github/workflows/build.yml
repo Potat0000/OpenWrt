@@ -106,6 +106,7 @@ jobs:
           cp .config ../artifact/config.seed
           ./scripts/diffconfig.sh > ../artifact/config.slim.seed
           cd ../artifact/
+          rm ../openwrt/bin/targets/x86/64/*rootfs*.img
           mv -f ../openwrt/bin/targets/x86/64/*.img .
           echo -e "MD5:    \c" > checksums
           md5sum *.img | grep squashfs | cut -d " " -f 1 >> checksums
