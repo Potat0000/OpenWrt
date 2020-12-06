@@ -106,7 +106,7 @@ jobs:
           cp .config ../artifact/config.seed
           ./scripts/diffconfig.sh > ../artifact/config.slim.seed
           cd ../artifact/
-          mv -f ../openwrt/bin/targets/x86/64/*-generic-squashfs-combined-efi.img .
+          mv -f ../openwrt/bin/targets/x86/64/*.img .
           echo -e "MD5:    \c" > checksums
           md5sum *.img | grep squashfs | cut -d " " -f 1 >> checksums
           echo -e "SHA256: \c" >> checksums
@@ -142,3 +142,7 @@ jobs:
           name: OpenWrt-${{ steps.set_name.outputs.username }}-${{ steps.set_time.outputs.build_time }}
           tag: ${{ steps.set_time.outputs.build_time }}
           token: ${{ secrets.sec_token }}
+
+      - name: Setup Debug Session When Failure
+        if: failure()
+        uses: tete1030/safe-debugger-action@dev
