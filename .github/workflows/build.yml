@@ -21,6 +21,7 @@ on:
 
 env:
   TZ: Asia/Shanghai
+  TMATE_ENCRYPT_PASSWORD: ${{secrets.TMATE_ENCRYPT_PASSWORD}}
 
 jobs:
     build:
