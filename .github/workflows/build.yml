@@ -61,7 +61,7 @@ jobs:
 
       - name: Clone Source
         run: |
-          git clone -b openwrt-18.06-k5.4 --single-branch https://github.com/project-openwrt/openwrt openwrt
+          git clone -b openwrt-18.06-k5.4 --single-branch https://github.com/immortalwrt/immortalwrt openwrt
           sudo chown -R runner:runner openwrt
           cd openwrt
           ./scripts/feeds update -a
