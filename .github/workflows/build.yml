@@ -111,13 +111,15 @@ jobs:
           cd ../artifact/
           rm ../openwrt/bin/targets/x86/64/*rootfs*.img
           mv -f ../openwrt/bin/targets/x86/64/*.img .
-          echo -e "MD5:    \c" > checksums
+          echo "Author: ${{ steps.set_name.outputs.username }}" > checksums
+          echo "Date:   ${{ steps.set_time.outputs.build_time }}" >> checksums
+          echo -e "MD5:    \c" >> checksums
           md5sum *.img | grep squashfs | cut -d " " -f 1 >> checksums
           echo -e "SHA256: \c" >> checksums
           sha256sum *.img | grep squashfs | cut -d " " -f 1 >> checksums
           gzip *.img
           cp checksums ../body.md
-          zip ../OpenWrt-${{ steps.set_name.outputs.username }}-${{ steps.set_time.outputs.build_time }}-ROM.zip *
+          zip -z ../OpenWrt-${{ steps.set_name.outputs.username }}-${{ steps.set_time.outputs.build_time }}-ROM.zip * < checksums
           cd ..
           sed -i 's/:\ \+/:\t/g' body.md
           sed -i '1iBuilt at ${{ steps.set_time.outputs.build_time }}' body.md
