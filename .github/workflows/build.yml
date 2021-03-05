@@ -89,8 +89,6 @@ jobs:
 
       - name: Make
         run: |
-          rm -rf ./artifact/
-          mkdir -p ./artifact/
           cd openwrt
           make defconfig
           make -j$[$(nproc)+1]
@@ -98,13 +96,13 @@ jobs:
       - name: Rebuild to Collect Error Log
         if: failure()
         run: |
-          rm -rf ./artifact/
-          mkdir -p ./artifact/
           cd openwrt
           make -j1 V=s
 
       - name: Organize Files
         run: |
+          rm -rf artifact
+          mkdir artifact
           cd openwrt
           cp .config ../artifact/config.seed
           ./scripts/diffconfig.sh > ../artifact/config.slim.seed
@@ -117,26 +115,16 @@ jobs:
           md5sum *.img | grep squashfs | cut -d " " -f 1 >> checksums
           echo -e "SHA256: \c" >> checksums
           sha256sum *.img | grep squashfs | cut -d " " -f 1 >> checksums
-          gzip *.img
           cp checksums ../body.md
           zip -z ../OpenWrt-${{ steps.set_name.outputs.username }}-${{ steps.set_time.outputs.build_time }}-ROM.zip * < checksums
           cd ..
           sed -i 's/:\ \+/:\t/g' body.md
-          sed -i '1iBuilt at ${{ steps.set_time.outputs.build_time }}' body.md
-          cd openwrt/bin/targets/x86/64/packages
-          zip ../../../../../../OpenWrt-${{ steps.set_name.outputs.username }}-${{ steps.set_time.outputs.build_time }}-Packages.zip *
 
       - name: Upload ROM Artifact
         uses: actions/upload-artifact@main
         with:
           name: OpenWrt-${{ steps.set_name.outputs.username }}-${{ steps.set_time.outputs.build_time }}-ROM
           path: ./artifact/
-
-      - name: Upload Packages
-        uses: actions/upload-artifact@main
-        with:
-          name: OpenWrt-${{ steps.set_name.outputs.username }}-${{ steps.set_time.outputs.build_time }}-Packages
-          path: ./openwrt/bin/targets/x86/64/packages
 
       - name: Create Release
         uses: ncipollo/release-action@v1
