@@ -25,12 +25,14 @@ env:
 
 jobs:
     build:
-      runs-on: ubuntu-18.04
+      runs-on: ubuntu-latest
       if: github.event.repository.owner.id == github.event.sender.id
 
       steps:
       - name: Checkout
         uses: actions/checkout@main
+        with:
+          fetch-depth: 1
 
       - name: Set Username
         id: set_name
@@ -45,23 +47,16 @@ jobs:
         env:
           DEBIAN_FRONTEND: noninteractive
         run: |
-          docker rmi $(docker images -q)
-          sudo -E apt-get remove -y --purge azure-cli ghc zulu* hhvm llvm* firefox google* dotnet* powershell mysql* php* mssql-tools msodbcsql17 android*
-          sudo -E apt-get update -y
-          sudo -E apt-get full-upgrade -y
-          sudo -E apt-get install -y antlr3 asciidoc autoconf automake autopoint binutils build-essential bzip2 ccache coreutils curl device-tree-compiler ecj fastjar flex g++-8-multilib gawk gcc-8 gcc-8-multilib gcc++-8 gettext git git-core gperf haveged intltool jq lib32gcc1 libc6-dev-i386 libelf-dev libglib2.0-dev libncurses5-dev libreadline-dev libssl-dev libtool libz-dev lrzsz msmtp nano p7zip p7zip-full patch python python-pip python-ply python3 python3-pip python3-ply qemu-utils re2c rsync scons subversion tar texinfo uglifyjs unzip upx vim wget xmlto xz-utils zlib1g-dev
-          for i in $(ls /usr/bin/*-8); do sudo -E ln -sf $i ${i%%-8*}; done
-          sudo -E ln -sf /usr/include/asm-generic /usr/include/asm
-          sudo -E apt-get autoremove -y --purge
-          sudo -E apt-get clean -y
-          sudo -E swapoff -a
-          sudo -E rm -rf /usr/share/dotnet /etc/mysql /etc/php /usr/local/lib/android /opt/ghc /swapfile
+          sudo sysctl vm.swappiness=0
+          nohup sudo rm -rf /usr/share/dotnet /usr/local/lib/android/sdk &
+          sudo -E apt-get update
+          sudo -E apt-get -y --no-install-recommends install antlr3 asciidoc autoconf automake autopoint binutils build-essential bzip2 ccache curl device-tree-compiler flex g++-multilib gawk gcc-multilib gettext git git-core gperf haveged intltool jq lib32gcc1 libc6-dev-i386 libelf-dev libglib2.0-dev libncurses5-dev libreadline-dev libssl-dev libtool libz-dev lrzsz msmtp nano p7zip p7zip-full patch python python-pip python-ply python3 python3-pip python3-ply qemu-utils rsync scons subversion swig texinfo uglifyjs unzip upx vim wget xmlto zlib1g-dev
           git config --global user.name "Actions"
           git config --global user.email "actions@github.com"
 
       - name: Clone Source
         run: |
-          git clone -b openwrt-18.06-k5.4 --single-branch https://github.com/immortalwrt/immortalwrt openwrt
+          git clone -b openwrt-21.02 --single-branch --depth=1 https://github.com/immortalwrt/immortalwrt openwrt
           sudo chown -R runner:runner openwrt
           cd openwrt
           ./scripts/feeds update -a
