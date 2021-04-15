@@ -86,7 +86,7 @@ jobs:
         run: |
           cd openwrt
           make defconfig
-          make -j$[$(nproc)+1]
+          make -j$[$(nproc)*2]
 
       - name: Rebuild to Collect Error Log
         if: failure()
