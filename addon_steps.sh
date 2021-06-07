@@ -10,7 +10,7 @@ curl -L https://github.com/vernesong/OpenClash/releases/download/Clash/clash-lin
 chmod +x clash
 cd ../../../../../..
 
-cd package/lean
+cd package
 sed -i 's/vpn/services/g' `grep 'vpn' -rl luci-app-zerotier`
 sed -i '/VPN/d' `grep 'VPN' -rl luci-app-zerotier`
-cd ../..
+cd ..
