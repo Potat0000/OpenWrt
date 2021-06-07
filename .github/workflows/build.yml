@@ -37,11 +37,7 @@ jobs:
       - name: Set Username
         id: set_name
         run: |
-          if [ "$GITHUB_ACTOR" = "gyj1109" ];then
-            echo "##[set-output name=username;]Gyj1109"
-          else
-            echo "##[set-output name=username;]`echo $GITHUB_REPOSITORY | cut -d / -f 2`"
-          fi
+          echo "##[set-output name=username;]`echo $GITHUB_REPOSITORY | cut -d / -f 2`"
 
       - name: Initialization Environment
         env:
