@@ -10,8 +10,8 @@ on:
   push:
     branches:
       - master
-  schedule:
-  - cron: "0 18 * * *"
+  # schedule:
+  # - cron: "0 18 * * *"
   workflow_dispatch:
     inputs:
       SSH_ACTIONS:
