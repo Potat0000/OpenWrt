@@ -1,5 +1,9 @@
 cd openwrt
 
+cd package
+git clone https://github.com/destan19/OpenAppFilter.git
+cd ..
+
 sed -i 's/Os/O3/g' include/target.mk
 sed -i 's/O2/O3/g' ./rules.mk
 sed -i 's/16384/65536/g' package/kernel/linux/files/sysctl-nf-conntrack.conf
