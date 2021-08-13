@@ -118,15 +118,16 @@ jobs:
           path: ./artifact/
 
       - name: Create Release
-        uses: ncipollo/release-action@v1
+        uses: softprops/action-gh-release@v1
         with:
-          allowUpdates: true
-          artifacts: "OpenWrt-${{ steps.set_name.outputs.username }}-*.zip,artifact/config.seed"
-          bodyFile: "body.md"
-          commit: ${{ github.sha }}
+          files: |
+            OpenWrt-${{ steps.set_name.outputs.username }}-${{ steps.set_time.outputs.build_time }}-ROM.zip
+            artifact/config.seed
+          body_path: "body.md"
+          target_commitish: ${{ github.sha }}
           name: OpenWrt-${{ steps.set_name.outputs.username }}-${{ steps.set_time.outputs.build_time }}
-          tag: ${{ steps.set_time.outputs.build_time }}
-          token: ${{ secrets.sec_token }}
+          tag_name: ${{ steps.set_time.outputs.build_time }}
+          token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Setup Debug Session
         if: failure()
