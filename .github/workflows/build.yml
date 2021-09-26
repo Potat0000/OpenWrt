@@ -37,7 +37,7 @@ jobs:
       - name: Set Username
         id: set_name
         run: |
-          echo "##[set-output name=username;]Potat0"
+          echo "username=Potat0" >> $GITHUB_ENV
 
       - name: Initialization Environment
         env:
@@ -72,7 +72,7 @@ jobs:
         run: |
           build_time=$(date +%Y-%m-%dT%H-%M)
           echo -e "\033[32m\033[1m$build_time\033[0m"
-          echo "##[set-output name=build_time;]$build_time"
+          echo "build_time=$build_time" >> $GITHUB_ENV
 
       - name: Setup Debug Session
         if: github.event.inputs.SSH_ACTIONS == 'true'
@@ -100,33 +100,33 @@ jobs:
           cd ../artifact/
           rm ../openwrt/bin/targets/x86/64/*rootfs*.img
           mv -f ../openwrt/bin/targets/x86/64/*.img .
-          echo "Author: ${{ steps.set_name.outputs.username }}" > checksums
-          echo "Date:   ${{ steps.set_time.outputs.build_time }}" >> checksums
+          echo "Author: ${{ env.username }}" > checksums
+          echo "Date:   ${{ env.build_time }}" >> checksums
           echo -e "MD5:    \c" >> checksums
           md5sum *.img | grep squashfs | cut -d " " -f 1 >> checksums
           echo -e "SHA256: \c" >> checksums
           sha256sum *.img | grep squashfs | cut -d " " -f 1 >> checksums
           cp checksums ../body.md
-          zip -z ../OpenWrt-${{ steps.set_name.outputs.username }}-${{ steps.set_time.outputs.build_time }}-ROM.zip * < checksums
+          zip -z ../OpenWrt-${{ env.username }}-${{ env.build_time }}-ROM.zip * < checksums
           cd ..
           sed -i 's/:\ \+/:\t/g' body.md
 
       - name: Upload ROM Artifact
         uses: actions/upload-artifact@main
         with:
-          name: OpenWrt-${{ steps.set_name.outputs.username }}-${{ steps.set_time.outputs.build_time }}-ROM
+          name: OpenWrt-${{ env.username }}-${{ env.build_time }}-ROM
           path: ./artifact/
 
       - name: Create Release
         uses: softprops/action-gh-release@v1
         with:
           files: |
-            OpenWrt-${{ steps.set_name.outputs.username }}-${{ steps.set_time.outputs.build_time }}-ROM.zip
+            OpenWrt-${{ env.username }}-${{ env.build_time }}-ROM.zip
             artifact/config.seed
           body_path: "body.md"
           target_commitish: ${{ github.sha }}
-          name: OpenWrt-${{ steps.set_name.outputs.username }}-${{ steps.set_time.outputs.build_time }}
-          tag_name: ${{ steps.set_time.outputs.build_time }}
+          name: OpenWrt-${{ env.username }}-${{ env.build_time }}
+          tag_name: ${{ env.build_time }}
           token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Setup Debug Session
