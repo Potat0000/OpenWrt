@@ -4,7 +4,7 @@ sed -i 's/Os/O3/g' include/target.mk
 sed -i 's/O2/O3/g' ./rules.mk
 sed -i 's/16384/65536/g' package/kernel/linux/files/sysctl-nf-conntrack.conf
 
-sed -i 's/192.168.1.1/192.168.1.3/g' package/base-files/files/bin/config_generate
+sed -i 's/192.168.1.1/192.168.18.3/g' package/base-files/files/bin/config_generate
 
 curl -s -L $(curl -s 'https://api.github.com/repos/vernesong/OpenClash/releases' | jq -r .[0].tarball_url) | tar zxf -
 mv vernesong-OpenClash-* openclash
