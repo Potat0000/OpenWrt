@@ -10,7 +10,6 @@ cd openclash
 mkdir core
 tar zxfO core-lateset/dev/clash-linux-amd64.tar.gz > core/clash
 gunzip -cd core-lateset/premium/clash-linux-amd64-*.gz > core/clash_tun
-tar zxfO core-lateset/game/clash-linux-amd64.tar.gz > core/clash_game
 cd ..
 
 mkdir -p package/base-files/files/etc/openclash
