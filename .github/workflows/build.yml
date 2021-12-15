@@ -90,7 +90,7 @@ jobs:
           path: ./artifact/
 
       - name: Create Release
-        uses: softprops/action-gh-release@v1
+        uses: softprops/action-gh-release@master
         with:
           files: |
             OpenWrt-${{ env.username }}-${{ env.build_time }}-ROM.zip
