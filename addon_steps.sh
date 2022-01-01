@@ -16,7 +16,7 @@ mkdir -p package/base-files/files/etc/openclash
 cd package/base-files/files/etc/openclash
 mv ../../../../../openclash/core .
 cd core
-chmod +x clash clash_tun clash_game
+chmod +x clash clash_tun
 cd ../../../../../..
 
 cd feeds/luci/applications
