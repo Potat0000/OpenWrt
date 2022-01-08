@@ -19,6 +19,10 @@ cd core
 chmod +x clash clash_tun
 cd ../../../../../..
 
+mkdir -p package/base-files/files/usr/bin
+curl -s -L https://github.com/AdguardTeam/AdGuardHome/releases/latest/download/AdGuardHome_linux_amd64.tar.gz | tar zxf - ./AdGuardHome/AdGuardHome -O > package/base-files/files/usr/bin/AdGuardHome
+chmod +x package/base-files/files/usr/bin/AdGuardHome
+
 cd feeds/luci/applications
 sed -i 's/vpn/services/g' `grep 'vpn' -rl luci-app-zerotier`
 sed -i '/VPN/d' `grep 'VPN' -rl luci-app-zerotier`
