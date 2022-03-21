@@ -1,0 +1,109 @@
+#=================================================
+# Description: Build OpenWrt using GitHub Actions
+# Lisence: MIT
+# Author: Mod from P3TERX
+#=================================================
+
+name: SelfHosted
+
+on:
+  push:
+    branches:
+      - master
+  # schedule:
+  # - cron: "0 18 * * *"
+  workflow_dispatch:
+
+env:
+  TZ: Asia/Shanghai
+  TMATE_ENCRYPT_PASSWORD: ${{secrets.TMATE_ENCRYPT_PASSWORD}}
+
+jobs:
+  build:
+    runs-on: self-hosted
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@main
+        with:
+          fetch-depth: 1
+
+      - name: Clone Source
+        run: |
+          git clone -b openwrt-21.02 --single-branch --depth=1 https://github.com/immortalwrt/immortalwrt openwrt
+          cd openwrt
+          echo "src-git mosdns https://github.com/QiuSimons/openwrt-mos.git" >> feeds.conf.default
+          ./scripts/feeds update -a
+          ./scripts/feeds install -a
+
+      - name: Load Config and Run Additional Step
+        run: |
+          cd openwrt
+          mv ../.config .config
+          sed -i 's/Os/O3/g' include/target.mk
+          sed -i 's/O2/O3/g' ./rules.mk
+          sed -i 's/16384/65536/g' package/kernel/linux/files/sysctl-nf-conntrack.conf
+          sed -i 's/192.168.1.1/192.168.18.3/g' package/base-files/files/bin/config_generate
+
+      - name: Set Build Time and Username
+        id: set_time
+        run: |
+          build_time=$(date +%Y-%m-%dT%H-%M)
+          echo -e "\033[32m\033[1m$build_time\033[0m"
+          echo "build_time=$build_time" >> $GITHUB_ENV
+          echo "username=Potat0" >> $GITHUB_ENV
+
+      - name: Make
+        run: |
+          cd openwrt
+          make defconfig
+          make -j18
+
+      - name: Rebuild to Collect Error Log
+        if: failure()
+        run: |
+          cd openwrt
+          make -j1 V=s
+
+      - name: Organize Files
+        run: |
+          rm -rf artifact
+          mkdir artifact
+          cd openwrt
+          cp .config ../artifact/config.seed
+          ./scripts/diffconfig.sh > ../artifact/config.slim.seed
+          cd ../artifact/
+          rm ../openwrt/bin/targets/x86/64/*rootfs*.img
+          mv -f ../openwrt/bin/targets/x86/64/*.img .
+          echo "Author: ${{ env.username }}" > checksums
+          echo "Date:   ${{ env.build_time }}" >> checksums
+          echo -e "MD5:    \c" >> checksums
+          md5sum *.img | grep squashfs | cut -d " " -f 1 >> checksums
+          echo -e "SHA256: \c" >> checksums
+          sha256sum *.img | grep squashfs | cut -d " " -f 1 >> checksums
+          cp checksums ../body.md
+          zip -z ../OpenWrt-${{ env.username }}-${{ env.build_time }}-ROM.zip * < checksums
+          cd ..
+          sed -i 's/:\ \+/:\t/g' body.md
+
+      - name: Upload ROM Artifact
+        uses: actions/upload-artifact@main
+        with:
+          name: OpenWrt-${{ env.username }}-${{ env.build_time }}-ROM
+          path: ./artifact/
+
+      - name: Create Release
+        uses: softprops/action-gh-release@master
+        with:
+          files: |
+            OpenWrt-${{ env.username }}-${{ env.build_time }}-ROM.zip
+            artifact/config.seed
+          body_path: "body.md"
+          target_commitish: ${{ github.sha }}
+          name: OpenWrt-${{ env.username }}-${{ env.build_time }}
+          tag_name: ${{ env.build_time }}
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Cleanup
+        run: |
+          rm -r artifact openwrt
