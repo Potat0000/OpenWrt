@@ -32,7 +32,6 @@ jobs:
         run: |
           git clone -b openwrt-21.02 --single-branch --depth=1 https://github.com/immortalwrt/immortalwrt openwrt
           cd openwrt
-          echo "src-git mosdns https://github.com/QiuSimons/openwrt-mos.git" >> feeds.conf.default
           ./scripts/feeds update -a
           ./scripts/feeds install -a
 
