@@ -7,9 +7,9 @@
 name: SelfHosted
 
 on:
-  # push:
-  #   branches:
-  #     - master
+  push:
+    branches:
+      - master
   # schedule:
   # - cron: "0 18 * * *"
   workflow_dispatch:
@@ -105,4 +105,4 @@ jobs:
 
       - name: Cleanup
         run: |
-          rm -r artifact openwrt
+          rm -r *
