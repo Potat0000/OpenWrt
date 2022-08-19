@@ -1,0 +1,126 @@
+name: Build
+
+on:
+  push:
+    branches:
+      - redmi-ax6
+  workflow_dispatch:
+
+env:
+  TZ: Asia/Shanghai
+  TMATE_ENCRYPT_PASSWORD: ${{secrets.TMATE_ENCRYPT_PASSWORD}}
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    if: github.event.repository.owner.id == github.event.sender.id
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@main
+        with:
+          fetch-depth: 1
+
+      - name: Initialization Environment
+        env:
+          DEBIAN_FRONTEND: noninteractive
+        run: |
+          sudo -E sysctl vm.swappiness=0
+          nohup sudo -E rm -rf /usr/share/dotnet /usr/local/lib/android/sdk &
+          sudo -E apt-get update
+          sudo -E apt-get -y --no-install-recommends install antlr3 asciidoc autoconf automake autopoint binutils build-essential bzip2 ccache curl device-tree-compiler flex g++-multilib gawk gcc-multilib gettext git git-core gperf haveged intltool jq lib32gcc1 libc6-dev-i386 libelf-dev libglib2.0-dev libncurses5-dev libreadline-dev libssl-dev libtool libz-dev lrzsz msmtp nano p7zip p7zip-full patch python-is-python2 python-ply python3 python3-pip python3-ply qemu-utils rsync scons subversion swig texinfo uglifyjs unzip upx vim wget xmlto zlib1g-dev
+          git config --global user.name "Actions"
+          git config --global user.email "actions@github.com"
+
+      - name: Clone Source
+        run: |
+          git clone -b ipq807x-5.15-pr --single-branch --depth=1 https://github.com/robimarko/openwrt.git openwrt
+          sudo -E chown -R runner:runner openwrt
+          cd openwrt
+          ./scripts/feeds update -a
+          ./scripts/feeds install -a
+          cd feeds/nss_packages/firmware/nss-eip-firmware/src
+          wget https://raw.githubusercontent.com/Boos4721/openwrt/master/package/qca/firmware/nss-eip-firmware/src/ifpp.bin
+          wget https://raw.githubusercontent.com/Boos4721/openwrt/master/package/qca/firmware/nss-eip-firmware/src/ipue.bin
+          wget https://raw.githubusercontent.com/Boos4721/openwrt/master/package/qca/firmware/nss-eip-firmware/src/ofpp.bin
+          wget https://raw.githubusercontent.com/Boos4721/openwrt/master/package/qca/firmware/nss-eip-firmware/src/opue.bin
+
+      - name: Load Config and Run Additional Step
+        run: |
+          cd openwrt
+          mv ../.config .config
+
+      - name: Set Build Time and Username
+        id: set_time
+        run: |
+          build_time=$(date +%Y-%m-%dT%H-%M)
+          echo -e "\033[32m\033[1m$build_time\033[0m"
+          echo "build_time=$build_time" >> $GITHUB_ENV
+          echo "username=Potat0" >> $GITHUB_ENV
+
+      - name: Download package sources
+        run: |
+          cd openwrt
+          make download V=s
+
+      - name: Build tools
+        run: |
+          cd openwrt
+          make tools/install -j$(nproc) V=s || \
+          make tools/install V=s
+
+      - name: Build toolchain
+        run: |
+          cd openwrt
+          make toolchain/install -j$(nproc) V=s || \
+          make toolchain/install V=s
+
+      - name: Build target images
+        run: |
+          cd openwrt
+          make -j$(nproc) V=s || \
+          make V=s
+
+      - name: Setup tmate session
+        uses: mxschmitt/action-tmate@v3
+        if: ${{ failure() }}
+        with:
+          limit-access-to-actor: true
+
+      - name: Organize Files
+        run: |
+          rm -rf artifact
+          mkdir artifact
+          cd openwrt
+          cp .config ../artifact/config.seed
+          ./scripts/diffconfig.sh > ../artifact/config.slim.seed
+          cd ../artifact/
+          mv ../openwrt/bin/targets/ipq807x/generic/openwrt-ipq807x-generic-redmi_ax6-squashfs-nand-sysupgrade.bin .
+          echo "Author: ${{ env.username }}" > checksums
+          echo "Date:   ${{ env.build_time }}" >> checksums
+          echo -e "MD5:    \c" >> checksums
+          md5sum *.bin | grep squashfs | cut -d " " -f 1 >> checksums
+          echo -e "SHA256: \c" >> checksums
+          sha256sum *.bin | grep squashfs | cut -d " " -f 1 >> checksums
+          cp checksums ../body.md
+          zip -z ../OpenWrt-RedmiAX6-${{ env.username }}-${{ env.build_time }}-ROM.zip * < checksums
+          cd ..
+          sed -i 's/:\ \+/:\t/g' body.md
+
+      - name: Upload ROM Artifact
+        uses: actions/upload-artifact@main
+        with:
+          name: OpenWrt-RedmiAX6-${{ env.username }}-${{ env.build_time }}-ROM
+          path: ./artifact/
+
+      - name: Create Release
+        uses: softprops/action-gh-release@master
+        with:
+          files: |
+            OpenWrt-RedmiAX6-${{ env.username }}-${{ env.build_time }}-ROM.zip
+            artifact/config.seed
+          body_path: "body.md"
+          target_commitish: ${{ github.sha }}
+          name: OpenWrt-RedmiAX6-${{ env.username }}-${{ env.build_time }}
+          tag_name: ${{ env.build_time }}
+          token: ${{ secrets.GITHUB_TOKEN }}
