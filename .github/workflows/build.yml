@@ -86,24 +86,24 @@ jobs:
           echo -e "SHA256: \c" >> checksums
           sha256sum *.img | grep squashfs | cut -d " " -f 1 >> checksums
           cp checksums ../body.md
-          zip -z ../OpenWrt-${{ env.username }}-${{ env.build_time }}-ROM.zip * < checksums
+          zip -z ../x86-${{ env.username }}-${{ env.build_time }}.zip * < checksums
           cd ..
           sed -i 's/:\ \+/:\t/g' body.md
 
       - name: Upload ROM Artifact
         uses: actions/upload-artifact@main
         with:
-          name: OpenWrt-${{ env.username }}-${{ env.build_time }}-ROM
+          name: x86-${{ env.username }}-${{ env.build_time }}
           path: ./artifact/
 
       - name: Create Release
         uses: softprops/action-gh-release@master
         with:
           files: |
-            OpenWrt-${{ env.username }}-${{ env.build_time }}-ROM.zip
+            x86-${{ env.username }}-${{ env.build_time }}.zip
             artifact/config.seed
           body_path: "body.md"
           target_commitish: ${{ github.sha }}
-          name: OpenWrt-${{ env.username }}-${{ env.build_time }}
+          name: x86-${{ env.username }}-${{ env.build_time }}
           tag_name: ${{ env.build_time }}
           token: ${{ secrets.GITHUB_TOKEN }}
