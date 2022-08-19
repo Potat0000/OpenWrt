@@ -1,17 +1,9 @@
-#=================================================
-# Description: Build OpenWrt using GitHub Actions
-# Lisence: MIT
-# Author: Mod from P3TERX
-#=================================================
-
-name: SelfHosted
+name: Build
 
 on:
-  # push:
-  #   branches:
-  #     - master
-  # schedule:
-  # - cron: "0 18 * * *"
+  push:
+    branches:
+      - x86
   workflow_dispatch:
 
 env:
@@ -20,7 +12,8 @@ env:
 
 jobs:
   build:
-    runs-on: self-hosted
+    runs-on: ubuntu-latest
+    if: github.event.repository.owner.id == github.event.sender.id
 
     steps:
       - name: Checkout
@@ -28,9 +21,21 @@ jobs:
         with:
           fetch-depth: 1
 
+      - name: Initialization Environment
+        env:
+          DEBIAN_FRONTEND: noninteractive
+        run: |
+          sudo -E sysctl vm.swappiness=0
+          nohup sudo -E rm -rf /usr/share/dotnet /usr/local/lib/android/sdk &
+          sudo -E apt-get update
+          sudo -E apt-get -y --no-install-recommends install antlr3 asciidoc autoconf automake autopoint binutils build-essential bzip2 ccache curl device-tree-compiler flex g++-multilib gawk gcc-multilib gettext git git-core gperf haveged intltool jq lib32gcc1 libc6-dev-i386 libelf-dev libglib2.0-dev libncurses5-dev libreadline-dev libssl-dev libtool libz-dev lrzsz msmtp nano p7zip p7zip-full patch python-is-python2 python-ply python3 python3-pip python3-ply qemu-utils rsync scons subversion swig texinfo uglifyjs unzip upx vim wget xmlto zlib1g-dev
+          git config --global user.name "Actions"
+          git config --global user.email "actions@github.com"
+
       - name: Clone Source
         run: |
           git clone -b openwrt-21.02 --single-branch --depth=1 https://github.com/immortalwrt/immortalwrt openwrt
+          sudo -E chown -R runner:runner openwrt
           cd openwrt
           ./scripts/feeds update -a
           ./scripts/feeds install -a
@@ -56,7 +61,7 @@ jobs:
         run: |
           cd openwrt
           make defconfig
-          make -j18
+          make -j$[$(nproc)+1]
 
       - name: Rebuild to Collect Error Log
         if: failure()
@@ -102,7 +107,3 @@ jobs:
           name: OpenWrt-${{ env.username }}-${{ env.build_time }}
           tag_name: ${{ env.build_time }}
           token: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Cleanup
-        run: |
-          rm -r *
