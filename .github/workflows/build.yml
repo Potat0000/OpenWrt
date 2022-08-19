@@ -47,7 +47,16 @@ jobs:
           sed -i 's/Os/O3/g' include/target.mk
           sed -i 's/O2/O3/g' ./rules.mk
           sed -i 's/16384/65536/g' package/kernel/linux/files/sysctl-nf-conntrack.conf
-          sed -i 's/192.168.1.1/192.168.18.3/g' package/base-files/files/bin/config_generate
+          sed -i 's/192.168.1.1/192.168.18.2/g' package/base-files/files/bin/config_generate
+          wget -O adh.tar.gz https://github.com/AdguardTeam/AdGuardHome/releases/latest/download/AdGuardHome_linux_amd64.tar.gz
+          tar zxvf adh.tar.gz
+          mkdir -p package/base-files/files/usr/bin
+          mv AdGuardHome/AdGuardHome package/base-files/files/usr/bin
+          chmod 755 package/base-files/files/usr/bin/AdGuardHome
+          rm -rf adh.tar.gz AdGuardHome
+          mkdir -p package/base-files/files/etc/init.d
+          mv ../adguardhome.init.d package/base-files/files/etc/init.d/adguardhome
+          chmod 755 package/base-files/files/etc/init.d/adguardhome
 
       - name: Set Build Time and Username
         id: set_time
