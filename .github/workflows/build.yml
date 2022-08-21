@@ -39,6 +39,7 @@ jobs:
           cd openwrt
           ./scripts/feeds update -a
           ./scripts/feeds install -a
+          mkdir -p feeds/nss_packages/firmware/nss-eip-firmware/src
           cd feeds/nss_packages/firmware/nss-eip-firmware/src
           wget https://raw.githubusercontent.com/Boos4721/openwrt/master/package/qca/firmware/nss-eip-firmware/src/ifpp.bin
           wget https://raw.githubusercontent.com/Boos4721/openwrt/master/package/qca/firmware/nss-eip-firmware/src/ipue.bin
