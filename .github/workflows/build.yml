@@ -39,6 +39,10 @@ jobs:
           cd openwrt
           ./scripts/feeds update -a
           ./scripts/feeds install -a
+
+      - name: Download NSS EIP Firmware
+        run: |
+          cd openwrt
           mkdir -p feeds/nss_packages/firmware/nss-eip-firmware/src
           cd feeds/nss_packages/firmware/nss-eip-firmware/src
           wget https://raw.githubusercontent.com/Boos4721/openwrt/master/package/qca/firmware/nss-eip-firmware/src/ifpp.bin
@@ -46,10 +50,11 @@ jobs:
           wget https://raw.githubusercontent.com/Boos4721/openwrt/master/package/qca/firmware/nss-eip-firmware/src/ofpp.bin
           wget https://raw.githubusercontent.com/Boos4721/openwrt/master/package/qca/firmware/nss-eip-firmware/src/opue.bin
 
-      - name: Load Config and Run Additional Step
+      - name: Load Config and Apply Patch
         run: |
           cd openwrt
           mv ../.config .config
+          git apply ../0001-ipq807x-add-rps-xps-irq-balance.patch
 
       - name: Set Build Time and Username
         id: set_time
