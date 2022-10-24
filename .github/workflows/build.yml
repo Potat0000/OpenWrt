@@ -77,14 +77,13 @@ jobs:
           cp .config ../artifact/config.seed
           ./scripts/diffconfig.sh > ../artifact/config.slim.seed
           cd ../artifact/
-          rm ../openwrt/bin/targets/x86/64/*rootfs*.img
-          mv -f ../openwrt/bin/targets/x86/64/*.img .
+          mv -f ../openwrt/bin/targets/x86/64/*rootfs*.tar.gz .
           echo "Author: ${{ env.username }}" > checksums
           echo "Date:   ${{ env.build_time }}" >> checksums
           echo -e "MD5:    \c" >> checksums
-          md5sum *.img | grep squashfs | cut -d " " -f 1 >> checksums
+          md5sum *.tar.gz | grep squashfs | cut -d " " -f 1 >> checksums
           echo -e "SHA256: \c" >> checksums
-          sha256sum *.img | grep squashfs | cut -d " " -f 1 >> checksums
+          sha256sum *.tar.gz | grep squashfs | cut -d " " -f 1 >> checksums
           cp checksums ../body.md
           zip -z ../x86-${{ env.username }}-${{ env.build_time }}.zip * < checksums
           cd ..
