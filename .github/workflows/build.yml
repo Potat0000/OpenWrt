@@ -47,7 +47,6 @@ jobs:
           sed -i 's/Os/O3/g' include/target.mk
           sed -i 's/O2/O3/g' ./rules.mk
           sed -i 's/16384/65536/g' package/kernel/linux/files/sysctl-nf-conntrack.conf
-          sed -i 's/192.168.1.1/192.168.18.2/g' package/base-files/files/bin/config_generate
 
       - name: Set Build Time and Username
         id: set_time
